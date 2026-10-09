@@ -56,7 +56,7 @@ export default function Sidebar() {
     <aside
       className={`${
         collapsed ? "w-[72px]" : "w-64"
-      } h-screen bg-[#FFFFFF] border-r border-[#E2E8F0] flex flex-col justify-between shrink-0 select-none z-30 transition-all duration-300 ease-in-out`}
+      } sticky top-0 h-screen self-start bg-[#FFFFFF] border-r border-[#E2E8F0] flex flex-col justify-between shrink-0 select-none z-30 transition-all duration-300 ease-in-out`}
     >
       <div className="flex flex-col flex-1 min-h-0">
         {/* Brand Header */}
@@ -65,7 +65,7 @@ export default function Sidebar() {
             collapsed ? "justify-center px-2" : "px-5 space-x-3"
           }`}
         >
-          <div className="w-8 h-8 rounded-lg bg-[#0F766E] flex items-center justify-center text-white shrink-0 shadow-sm">
+          <div className="w-8 h-8 rounded-lg bg-[#0F766E] flex items-center justify-center text-white shrink-0 shadow-xs">
             <Boxes className="w-4 h-4" />
           </div>
           {!collapsed && (
@@ -74,8 +74,8 @@ export default function Sidebar() {
                 <span className="font-bold text-[#0F172A] tracking-tight text-sm font-sans">
                   CUBE LOGISTICS
                 </span>
-                <span className="text-[10px] bg-[#ECFDF5] text-[#065F46] font-mono px-1.5 py-0.2 rounded border border-[#A7F3D0] font-semibold">
-                  5-POD
+                <span className="text-[10px] bg-[#ECFDF5] text-[#065F46] font-mono px-1.5 py-0.5 rounded border border-[#A7F3D0] font-semibold">
+                  POD 7
                 </span>
               </div>
               <p className="text-[11px] text-[#64748B] font-medium truncate">
@@ -102,17 +102,20 @@ export default function Sidebar() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center ${
+                    className={`relative flex items-center ${
                       collapsed ? "justify-center px-2" : "px-3"
-                    } py-2 rounded-lg text-xs font-medium transition-all group ${
+                    } py-2 rounded-xl text-xs font-medium transition-all group ${
                       isActive
-                        ? "bg-[#0F766E]/10 text-[#0F766E] font-semibold shadow-sm"
+                        ? "bg-teal-50/70 text-[#0F766E] font-semibold border border-teal-200/50 shadow-xs"
                         : "text-[#475569] hover:bg-[#F8F9F6] hover:text-[#0F172A]"
                     }`}
                     title={collapsed ? item.name : undefined}
                   >
+                    {isActive && (
+                      <span className="absolute left-0 top-2 bottom-2 w-1 bg-[#0F766E] rounded-r" />
+                    )}
                     <Icon
-                      className={`w-4 h-4 shrink-0 ${
+                      className={`w-4 h-4 shrink-0 transition-colors ${
                         isActive
                           ? "text-[#0F766E]"
                           : "text-[#64748B] group-hover:text-[#0F172A]"
@@ -123,10 +126,10 @@ export default function Sidebar() {
                     )}
                     {!collapsed && item.badge && (
                       <span
-                        className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${
+                        className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold transition-colors ${
                           isActive
-                            ? "bg-[#0F766E] text-white"
-                            : "bg-[#F1F5F9] text-[#64748B]"
+                            ? "bg-teal-100 text-[#0F766E]"
+                            : "bg-[#F1F5F9] text-[#64748B] group-hover:bg-[#E2E8F0]"
                         }`}
                       >
                         {item.badge}
@@ -143,13 +146,15 @@ export default function Sidebar() {
       {/* Footer & Collapse Toggle */}
       <div className="p-3 border-t border-[#E2E8F0] space-y-2 bg-[#FAFAF8]">
         {!collapsed && (
-          <div className="px-3 py-2 bg-white rounded-lg border border-[#E2E8F0] text-[11px]">
+          <div className="px-3 py-2 bg-white rounded-xl border border-[#E2E8F0] text-[11px] shadow-xs">
             <div className="flex items-center justify-between text-[#64748B]">
               <span className="flex items-center space-x-1.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span className="font-medium text-[#0F172A]">All Pods Live</span>
+                <span className="font-semibold text-[#0F172A]">All Pods Live</span>
               </span>
-              <span className="font-mono text-[10px] text-[#0F766E] font-semibold">Neon DB</span>
+              <span className="font-mono text-[10px] text-[#0F766E] font-bold bg-teal-50 px-1.5 py-0.5 rounded border border-teal-100">
+                Neon DB
+              </span>
             </div>
           </div>
         )}

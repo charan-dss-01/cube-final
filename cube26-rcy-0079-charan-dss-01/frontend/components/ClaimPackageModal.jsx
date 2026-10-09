@@ -23,6 +23,7 @@ export default function ClaimPackageModal({ isOpen, onClose, claim, onStatusChan
   const [copiedText, setCopiedText] = useState(false);
   const [currentStatus, setCurrentStatus] = useState(claim?.status || "DRAFT");
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [modalError, setModalError] = useState(null);
 
   React.useEffect(() => {
     if (claim?.status) setCurrentStatus(claim.status);
@@ -211,13 +212,14 @@ In accordance with marketplace compliance terms and custody records, we request 
   };
 
   const handleUpdateStatus = async (newStatus) => {
+    setModalError(null);
     try {
       setUpdatingStatus(true);
       await api.updateClaimStatus(claim.claim_id, newStatus, claim.company_id);
       setCurrentStatus(newStatus);
       if (onStatusChange) onStatusChange();
     } catch (e) {
-      alert(`Failed to update claim status: ${e.message}`);
+      setModalError(`Failed to update claim status: ${e.message}`);
     } finally {
       setUpdatingStatus(false);
     }
@@ -226,6 +228,12 @@ In accordance with marketplace compliance terms and custody records, we request 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
       <div className="bg-white border border-[#E2E8F0] w-full max-w-4xl rounded-2xl shadow-xl p-6 relative max-h-[92vh] flex flex-col space-y-4">
+        {modalError && (
+          <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl flex items-center justify-between gap-2">
+            <span>{modalError}</span>
+            <button onClick={() => setModalError(null)} className="text-rose-500 font-bold p-1">✕</button>
+          </div>
+        )}
         {/* Header */}
         <div className="flex items-start justify-between border-b border-[#E2E8F0] pb-4">
           <div className="flex items-center space-x-3.5">

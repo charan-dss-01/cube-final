@@ -21,6 +21,7 @@ export default function RecoveryOpportunitiesPage() {
   const [loading, setLoading] = useState(true);
   const [activeClaim, setActiveClaim] = useState(null);
   const [claimModalOpen, setClaimModalOpen] = useState(false);
+  const [claimError, setClaimError] = useState(null);
 
   const loadOpportunities = async () => {
     try {
@@ -39,13 +40,14 @@ export default function RecoveryOpportunitiesPage() {
   }, [currentCompany]);
 
   const handleQuickClaim = async (chargeId) => {
+    setClaimError(null);
     try {
       const claim = await api.createClaim(currentCompany, chargeId);
       setActiveClaim(claim);
       setClaimModalOpen(true);
       loadOpportunities();
     } catch (err) {
-      alert(`Claim generation failed: ${err.message}`);
+      setClaimError(`Claim generation failed: ${err.message}`);
     }
   };
 
@@ -95,6 +97,19 @@ export default function RecoveryOpportunitiesPage() {
             </div>
           </div>
         </div>
+
+        {claimError && (
+          <div className="p-3.5 rounded-xl text-xs bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-center justify-between gap-3 animate-fade-in">
+            <span>{claimError}</span>
+            <button
+              type="button"
+              onClick={() => setClaimError(null)}
+              className="text-rose-400 hover:text-rose-200 font-bold text-xs p-1"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Opportunities List */}
         <div className="rounded-2xl bg-slate-900/60 border border-slate-800/50 overflow-hidden shadow-card">

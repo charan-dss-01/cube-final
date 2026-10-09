@@ -10,7 +10,8 @@ catalogue = [
     {"sku": "BLUE-BOTTLE-001", "name": "Blue Water Bottle 1L", "category": "bottles"},
     {"sku": "RED-BOTTLE-001", "name": "Red Water Bottle 1L", "category": "bottles"}
 ]
-primary_img_path = Path(r"c:\cube\cube26-rcv-0286-sharonmedithi0304\submissions\sharonmedithi0304\agent\fixtures\correct_blue_bottle.png")
+base_dir = Path(__file__).resolve().parent.parent
+primary_img_path = base_dir / "cube26-rcv-0286-sharonmedithi0304" / "submissions" / "sharonmedithi0304" / "agent" / "fixtures" / "correct_blue_bottle.png"
 primary_bytes = primary_img_path.read_bytes()
 references = [("BLUE-BOTTLE-001", primary_bytes), ("RED-BOTTLE-001", primary_bytes)]
 

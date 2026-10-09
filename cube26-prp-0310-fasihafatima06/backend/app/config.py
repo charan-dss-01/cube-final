@@ -3,10 +3,7 @@ import os
 class Settings:
     PROJECT_NAME: str = "AgentPrep - Visual Prep Compliance Agent"
     API_V1_STR: str = "/api"
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        "postgresql://neondb_owner:npg_RQy5Uu0hlMmL@ep-fancy-union-b5a91lxa-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require"
-    )
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "")
     
     # AI Vision Provider Configuration
     VISION_PROVIDER: str = os.getenv("VISION_PROVIDER", "local")  # local, openai, gemini, etc.

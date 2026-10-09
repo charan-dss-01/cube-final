@@ -1,0 +1,78 @@
+name: CUBE Unified CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-backend:
+    name: Backend Pytest Suites
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Backend Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r cube26-rcy-0079-charan-dss-01/backend/requirements.txt
+          pip install pytest httpx
+
+      - name: Run Tenancy & Recovery Unit Tests
+        env:
+          DATABASE_URL: "sqlite:///:memory:"
+        run: |
+          cd cube26-rcy-0079-charan-dss-01/backend
+          python -m pytest tests/test_tenancy.py
+
+  test-orchestration:
+    name: Pod Orchestration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Pod Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest requests fastapi uvicorn jsonschema pyyaml
+
+      - name: Run Pod Integration & E2E Tests
+        run: |
+          cd cube-03-pack-manager/cube-round3-pod
+          python -m pytest tests/e2e tests/integration
+
+  test-frontend:
+    name: Frontend Lint & Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: 'npm'
+          cache-dependency-path: 'cube26-rcy-0079-charan-dss-01/frontend/package-lock.json'
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd cube26-rcy-0079-charan-dss-01/frontend
+          npm ci --prefer-offline || npm install
+
+      - name: Build Next.js
+        env:
+          NEXT_PUBLIC_API_URL: "http://localhost:8000/api/v1"
+        run: |
+          cd cube26-rcy-0079-charan-dss-01/frontend
+          npm run build

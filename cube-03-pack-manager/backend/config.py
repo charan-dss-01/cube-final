@@ -8,9 +8,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
     integrated_mode: Literal["local", "hosted"] = "local"
     integrated_synthetic_only: bool = True
-    database_url: str = (
-        "postgresql://neondb_owner:npg_RQy5Uu0hlMmL@ep-fancy-union-b5a91lxa-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require"
-    )
+    database_url: str = os.getenv("DATABASE_URL", "")
     migration_database_url: str = ""
     auth_mode: str = "local"
     local_organization: str = "org_demo_alpha"

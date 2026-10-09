@@ -21,9 +21,8 @@ def run_pack_live_gemini_test():
     print(f"Provider Valid: {cfg.provider_configured}")
     
     # Primary image (e.g. blue bottle receiving fixture)
-    primary_img_path = Path("cube26-rcv-0286-sharonmedithi0304-main/submissions/sharonmedithi0304/agent/fixtures/correct_blue_bottle.png")
-    if not primary_img_path.exists():
-        primary_img_path = Path(r"c:\cube\cube26-rcv-0286-sharonmedithi0304\submissions\sharonmedithi0304\agent\fixtures\correct_blue_bottle.png")
+    base_dir = Path(__file__).resolve().parent.parent
+    primary_img_path = base_dir / "cube26-rcv-0286-sharonmedithi0304" / "submissions" / "sharonmedithi0304" / "agent" / "fixtures" / "correct_blue_bottle.png"
         
     print(f"Primary Pack Image: {primary_img_path.name} (exists: {primary_img_path.exists()})")
     primary_bytes = primary_img_path.read_bytes()
@@ -69,7 +68,7 @@ def run_pack_live_gemini_test():
         # Persist to Neon DB pck_records table
         try:
             import psycopg2
-            db_url = os.environ.get("DATABASE_URL", "postgresql://neondb_owner:npg_RQy5Uu0hlMmL@ep-fancy-union-b5a91lxa-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require")
+            db_url = os.environ.get("DATABASE_URL", "")
             conn = psycopg2.connect(db_url)
             conn.autocommit = True
             cur = conn.cursor()

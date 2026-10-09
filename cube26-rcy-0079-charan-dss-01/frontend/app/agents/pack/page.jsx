@@ -36,6 +36,8 @@ export default function PackAgentPage() {
   // Operator Input Form State - Open by default for real-time carton reconciliation & vision uploads
   const [showInputForm, setShowInputForm] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [actionError, setActionError] = useState(null);
+  const [actionSuccess, setActionSuccess] = useState(null);
   const [formData, setFormData] = useState({
     unit_id: "UNIT-PCK-001",
     order_id: "ORD-OUT-991",
@@ -103,6 +105,8 @@ export default function PackAgentPage() {
 
   const handleRunInspection = async (e) => {
     e.preventDefault();
+    setActionError(null);
+    setActionSuccess(null);
     try {
       setSubmitting(true);
       const form = new FormData();
@@ -116,6 +120,8 @@ export default function PackAgentPage() {
       await loadData();
       const match = { id: res.pack_id, data: { ...res, decision: res.decision } };
       setSelectedRecord(match);
+      setActionSuccess(`Pack reconciliation complete for ${res.unit_id || formData.unit_id}. Station verdict: ${res.decision || "SEAL"}`);
+      setTimeout(() => setActionSuccess(null), 6000);
       setFormData((prev) => {
         const match = prev.unit_id.match(/(\d+)$/);
         const nextNum = match ? String(parseInt(match[1]) + 1).padStart(match[1].length, '0') : "002";
@@ -127,7 +133,7 @@ export default function PackAgentPage() {
       });
     } catch (err) {
       console.error("Failed to run pack inspection:", err);
-      alert("Error executing pack inspection: " + (err.message || err));
+      setActionError(err.message || String(err));
     } finally {
       setSubmitting(false);
     }
@@ -246,13 +252,51 @@ export default function PackAgentPage() {
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-teal-50 text-[#0F766E] border border-teal-200">
-                  gemini-3.5-flash-lite active
+                  Gemini 3.5 Flash Multimodal
                 </span>
                 <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
                   Overhead AI Counting
                 </span>
               </div>
             </div>
+
+            {actionError && (
+              <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-start justify-between gap-3 animate-fade-in">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-semibold text-rose-900">Pack Reconciliation Issue</div>
+                    <div className="text-[11px] text-rose-700 mt-0.5 break-all font-mono">{actionError}</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActionError(null)}
+                  className="text-rose-500 hover:text-rose-800 font-bold text-xs p-1"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {actionSuccess && (
+              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-start justify-between gap-3 animate-fade-in">
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-semibold text-emerald-900">Carton Reconciled & Logged</div>
+                    <div className="text-[11px] text-emerald-700 mt-0.5">{actionSuccess}</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActionSuccess(null)}
+                  className="text-emerald-500 hover:text-emerald-800 font-bold text-xs p-1"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
 
             <form onSubmit={handleRunInspection} className="space-y-4">
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">

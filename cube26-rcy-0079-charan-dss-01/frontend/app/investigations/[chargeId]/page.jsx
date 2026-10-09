@@ -38,6 +38,7 @@ export default function InvestigationDetailPage({ params }) {
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [activeClaim, setActiveClaim] = useState(null);
   const [generatingClaim, setGeneratingClaim] = useState(false);
+  const [claimError, setClaimError] = useState(null);
 
   const loadInvestigation = async () => {
     try {
@@ -72,6 +73,7 @@ export default function InvestigationDetailPage({ params }) {
   }, [chargeId, currentCompany]);
 
   const handleGenerateClaim = async () => {
+    setClaimError(null);
     try {
       setGeneratingClaim(true);
       const claim = await api.createClaim(currentCompany, chargeId);
@@ -80,7 +82,7 @@ export default function InvestigationDetailPage({ params }) {
       // Reload charge to reflect claimed status
       loadInvestigation();
     } catch (err) {
-      alert(`Claim generation failed: ${err.message}`);
+      setClaimError(`Claim generation failed: ${err.message}`);
     } finally {
       setGeneratingClaim(false);
     }
@@ -170,6 +172,19 @@ export default function InvestigationDetailPage({ params }) {
           <ChevronRight className="w-3 h-3 text-slate-600" />
           <span className="text-slate-200 font-mono font-medium">{charge.charge_id}</span>
         </div>
+
+        {claimError && (
+          <div className="p-3.5 rounded-xl text-xs bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-center justify-between gap-3 animate-fade-in">
+            <span>{claimError}</span>
+            <button
+              type="button"
+              onClick={() => setClaimError(null)}
+              className="text-rose-400 hover:text-rose-200 font-bold text-xs p-1"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Hero Card: Assessment, Amount & Claim Action */}
         <div className="p-6 rounded-2xl glass-surface-strong border border-slate-800/60 shadow-card flex flex-col md:flex-row md:items-center justify-between gap-6">

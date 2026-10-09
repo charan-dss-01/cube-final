@@ -31,9 +31,10 @@ class LLMRecoveryReasoner:
         Uses Gemini to analyze evidence when rule-based deterministic templates
         do not cover the fee category.
         """
-        api_key = settings.GEMINI_API_KEY
-        if not api_key:
-            return None
+        from app.services.gemini_key_manager import gemini_key_manager
+
+        if gemini_key_manager.total_keys == 0:
+            return cls._local_forensic_eval(charge_reason, charge_amount, currency, charge_metadata, evidence_items)
 
         prompt = cls._build_prompt(
             charge_reason=charge_reason,
@@ -43,44 +44,51 @@ class LLMRecoveryReasoner:
             evidence_items=evidence_items
         )
 
-        try:
-            if api_key:
-                model_name = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
-                if "2.5-flash" in model_name:
-                    model_name = "gemini-3.5-flash-lite"
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
-                payload = {
-                    "contents": [
-                        {
-                            "parts": [
-                                {"text": prompt}
-                            ]
-                        }
-                    ],
-                    "generationConfig": {
-                        "temperature": 0.1,  # Low temperature for deterministic, factual audit behavior
-                        "responseMimeType": "application/json"
+        def _perform_llm_reasoning(api_key: str, slot_id: str) -> Dict[str, Any]:
+            model_name = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
+            if "2.5-flash" in model_name:
+                model_name = "gemini-3.5-flash-lite"
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
+            payload = {
+                "contents": [
+                    {
+                        "parts": [
+                            {"text": prompt}
+                        ]
                     }
+                ],
+                "generationConfig": {
+                    "temperature": 0.1,  # Low temperature for deterministic, factual audit behavior
+                    "responseMimeType": "application/json"
                 }
+            }
 
-                with httpx.Client(timeout=25.0) as client:
-                    resp = client.post(url, json=payload)
-                    if resp.status_code == 200:
-                        data = resp.json()
-                        text_content = (
-                            data.get("candidates", [{}])[0]
-                            .get("content", {})
-                            .get("parts", [{}])[0]
-                            .get("text", "")
-                        )
-                        if text_content:
-                            parsed = json.loads(text_content)
-                            return cls._validate_and_sanitize(parsed, charge_amount, currency)
-                    else:
-                        logger.warning(f"Gemini API returned status {resp.status_code}: {resp.text}")
+            with httpx.Client(timeout=25.0) as client:
+                resp = client.post(url, json=payload)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    text_content = (
+                        data.get("candidates", [{}])[0]
+                        .get("content", {})
+                        .get("parts", [{}])[0]
+                        .get("text", "")
+                    )
+                    if text_content:
+                        parsed = json.loads(text_content)
+                        return cls._validate_and_sanitize(parsed, charge_amount, currency)
+                    raise ValueError("Empty response text from Gemini LLM")
+                elif resp.status_code in (429, 503):
+                    raise RuntimeError(f"HTTP {resp.status_code} quota/rate limit on {model_name}: {resp.text[:150]}")
+                elif resp.status_code in (400, 403) and ("API_KEY_INVALID" in resp.text or "key not valid" in resp.text.lower()):
+                    raise RuntimeError(f"API_KEY_INVALID HTTP {resp.status_code}: {resp.text[:150]}")
+                else:
+                    logger.warning(f"Gemini API returned status {resp.status_code} on {slot_id}: {resp.text[:150]}")
+                    raise RuntimeError(f"Gemini API error {resp.status_code}")
 
+        try:
+            return gemini_key_manager.execute_with_retry(_perform_llm_reasoning)
         except Exception as e:
-            logger.warning(f"Gemini reasoning failed or timed out: {e}")
+            logger.warning(f"Gemini reasoning failed or exhausted keys: {e}")
 
         # Local Offline Forensic Reasoner Fallback
         return cls._local_forensic_eval(charge_reason, charge_amount, currency, charge_metadata, evidence_items)

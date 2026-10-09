@@ -391,7 +391,77 @@ class RecoveryAgent:
                     timeline=timeline
                 )
 
-        # Case D: Unmodeled / Open-ended Marketplace Fee Reasoning (AI Generalization Layer)
+        # Case D: Shipping Damage / Inbound Handling Defect (Pack Evidence Adjudication)
+        elif "damage" in charge_reason or "shipping" in charge_reason or "packaging" in charge_reason:
+            pack_items = [i for i in relevant_items if i["source_type"] == "pack"]
+            rcv_items = [i for i in relevant_items if i["source_type"] == "receiving"]
+
+            if pack_items:
+                pck_rec = pack_items[0]
+                raw = pck_rec.get("raw_payload") or {}
+                decision = raw.get("decision", "seal")
+                checks = raw.get("checks", [])
+                all_pack_passed = all(c.get("verdict") == "PASS" for c in checks) if checks else (decision == "seal")
+
+                if all_pack_passed or decision == "seal":
+                    return InvestigationResult(
+                        charge_id=charge.charge_id,
+                        assessment="CONTRADICTED",
+                        claim_supported=True,
+                        claim_amount=amount,
+                        currency=currency,
+                        reasoning=f"Outbound Packing evidence ({pck_rec['evidence_id']}) proves carton was sealed, tare-weight verified, and packaged with protective dunnage adhering to carrier standards prior to custody transfer. Defect occurred post-dispatch.",
+                        evidence_ids=[pck_rec["evidence_id"]],
+                        unsupported_reason=None,
+                        coverage_summary={
+                            "verified_items": [
+                                f"Pack verification {pck_rec['evidence_id']} confirms package sealed intact",
+                                "Protective dunnage and packaging matrix verified"
+                            ],
+                            "missing_items": [],
+                            "why_not_claim": None
+                        },
+                        evidence_items=[InvestigationEvidenceItem(**i) for i in retrieved_items],
+                        timeline=timeline
+                    )
+                else:
+                    return InvestigationResult(
+                        charge_id=charge.charge_id,
+                        assessment="SUPPORTED",
+                        claim_supported=False,
+                        claim_amount=0.0,
+                        currency=currency,
+                        reasoning=f"Packing inspection ({pck_rec['evidence_id']}) recorded packaging discrepancies or failed checks prior to dispatch. Penalty deduction is corroborated.",
+                        evidence_ids=[pck_rec["evidence_id"]],
+                        unsupported_reason="Outbound packing inspection confirms packaging failure prior to carrier handover.",
+                        coverage_summary={
+                            "verified_items": [f"Pack record {pck_rec['evidence_id']} identified defects"],
+                            "missing_items": [],
+                            "why_not_claim": "Filing a claim contradicted by warehouse pack audit logs risks seller account standing."
+                        },
+                        evidence_items=[InvestigationEvidenceItem(**i) for i in retrieved_items],
+                        timeline=timeline
+                    )
+            else:
+                return InvestigationResult(
+                    charge_id=charge.charge_id,
+                    assessment="SILENT",
+                    claim_supported=False,
+                    claim_amount=0.0,
+                    currency=currency,
+                    reasoning=f"No Outbound Pack evidence was found for unit {charge.unit_id or charge.order_id}. Cannot substantiate carrier vs seller packaging culpability.",
+                    evidence_ids=[],
+                    unsupported_reason="Missing Pack Station overhead inspection evidence.",
+                    coverage_summary={
+                        "verified_items": ["Order/Unit reference identified"],
+                        "missing_items": ["Pack station inspection log", "Carton seal proof", "Protective dunnage audit"],
+                        "why_not_claim": "Without physical pack evidence proving proper sealing, channel dispute cannot be substantiated."
+                    },
+                    evidence_items=[InvestigationEvidenceItem(**i) for i in retrieved_items],
+                    timeline=timeline
+                )
+
+        # Case E: Unmodeled / Open-ended Marketplace Fee Reasoning (AI Generalization Layer)
         charge_meta = {
             "charge_id": charge.charge_id,
             "unit_id": charge.unit_id,

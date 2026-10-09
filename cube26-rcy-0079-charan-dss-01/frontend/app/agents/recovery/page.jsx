@@ -38,6 +38,8 @@ export default function RecoveryAgentPage() {
   // Operator Input Form State
   const [showInputForm, setShowInputForm] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [actionError, setActionError] = useState(null);
+  const [actionSuccess, setActionSuccess] = useState(null);
   const [formData, setFormData] = useState({
     unit_id: "UNIT-0003",
     sku: "BLUE-BOTTLE-001",
@@ -146,6 +148,8 @@ export default function RecoveryAgentPage() {
 
   const handleRunInvestigation = async (e) => {
     e.preventDefault();
+    setActionError(null);
+    setActionSuccess(null);
     try {
       setSubmitting(true);
       const res = await api.runRecoveryInvestigation(formData);
@@ -163,6 +167,8 @@ export default function RecoveryAgentPage() {
           confidence_score: 0.95
         }
       });
+      setActionSuccess(`Forensic audit completed for ${res.unit_id || formData.unit_id}. Assessment: ${res.assessment || "COMPLETED"}`);
+      setTimeout(() => setActionSuccess(null), 6000);
       setFormData(prev => ({
         ...prev,
         amount: 45.00,
@@ -170,7 +176,7 @@ export default function RecoveryAgentPage() {
       }));
     } catch (err) {
       console.error("Failed to execute dispute investigation:", err);
-      alert("Error executing recovery audit: " + (err.message || err));
+      setActionError(err.message || String(err));
     } finally {
       setSubmitting(false);
     }
@@ -311,9 +317,47 @@ export default function RecoveryAgentPage() {
                 </p>
               </div>
               <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-teal-50 text-[#0F766E] border border-teal-200">
-                gemini-3.5-flash-lite active
+                Gemini 3.5 Flash Multimodal
               </span>
             </div>
+
+            {actionError && (
+              <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-800 flex items-start justify-between gap-3 animate-fade-in">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-semibold text-rose-900">Recovery Audit Error</div>
+                    <div className="text-[11px] text-rose-700 mt-0.5 break-all font-mono">{actionError}</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActionError(null)}
+                  className="text-rose-500 hover:text-rose-800 font-bold text-xs p-1"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {actionSuccess && (
+              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-start justify-between gap-3 animate-fade-in">
+                <div className="flex items-start gap-2.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                  <div>
+                    <div className="font-semibold text-emerald-900">Audit Completed</div>
+                    <div className="text-[11px] text-emerald-700 mt-0.5">{actionSuccess}</div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActionSuccess(null)}
+                  className="text-emerald-500 hover:text-emerald-800 font-bold text-xs p-1"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
 
             <form onSubmit={handleRunInvestigation} className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
               <div>

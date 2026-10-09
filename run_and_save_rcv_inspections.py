@@ -13,7 +13,7 @@ sys.path.insert(0, str(AGENT_DIR))
 from inspection_agent import inspect_unit
 from db_adapter import save_rcv_inspection
 
-csv_path = r"c:\cube\cube26-rcv-0286-sharonmedithi0304\data\receiving_sample.csv"
+csv_path = str(THIS_DIR / "cube26-rcv-0286-sharonmedithi0304" / "data" / "receiving_sample.csv")
 df = pd.read_csv(csv_path)
 
 print(f"Running headless inspection engine on {len(df)} units...")

@@ -1,4 +1,5 @@
 import "./globals.css";
+import "lenis/dist/lenis.css";
 import { WorkspaceProvider } from "../context/WorkspaceContext";
 import AppShell from "../components/AppShell";
 
@@ -9,7 +10,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" className="scroll-auto">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

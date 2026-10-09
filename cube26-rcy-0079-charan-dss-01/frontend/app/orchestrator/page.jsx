@@ -79,7 +79,7 @@ export default function OrchestratorPage() {
   const loadLifecycle = async (unitId) => {
     setLoading(true);
     try {
-      const data = await api.getUnitLifecycle(unitId);
+      const data = await api.getUnitLifecycle(unitId, currentCompany);
       setLifecycle(data);
     } catch (e) {
       console.error("Lifecycle load error:", e);
@@ -219,7 +219,7 @@ export default function OrchestratorPage() {
             <div className="flex items-center gap-2">
               <span className="text-xs text-[#64748B] font-medium">Select:</span>
               <div className="flex items-center gap-1.5">
-                {["UNIT-0001", "UNIT-0002", "UNIT-0003", "UNIT-0005", "UNIT-0067"].map((uid) => (
+                {["UNIT-0001", "UNIT-0002", "UNIT-0003", "UNIT-0005", "UNIT-DEMO-777", "UNIT-0067"].map((uid) => (
                   <button
                     key={uid}
                     onClick={() => setSelectedUnit(uid)}

@@ -4,6 +4,8 @@ from app.config.settings import settings
 from app.models.models import Base
 
 db_url = settings.DATABASE_URL
+if not db_url:
+    raise RuntimeError("DATABASE_URL environment variable is required and cannot be empty.")
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 

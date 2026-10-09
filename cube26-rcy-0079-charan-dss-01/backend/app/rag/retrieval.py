@@ -204,10 +204,33 @@ class HybridRetrievalEngine:
                 establishes = f"Fulfillment stage: {source}."
                 does_not_establish = "Does not prove whether customer returned the physical item."
 
+        elif "damage" in reason or "shipping" in reason or "packaging" in reason or "handling" in reason:
+            if source == "pack":
+                relevance = "RELEVANT"
+                decision = payload.get("decision", "seal")
+                extra = payload.get("has_extra_items", False)
+                establishes = f"Pack record {evidence.evidence_id} establishes carton was inspected and cleared ('{decision}') with proper protective dunnage and sealed container prior to carrier custody."
+                does_not_establish = "Does not establish carrier handling during road or air transit after facility dispatch."
+            elif source == "receiving":
+                relevance = "RELEVANT"
+                carton_dmg = payload.get("carton_damage", "none")
+                unit_dmg = payload.get("unit_damage", "none")
+                establishes = f"Inbound receiving establishes unit condition upon dock receipt: carton_damage='{carton_dmg}', unit_damage='{unit_dmg}'."
+                does_not_establish = "Does not prove outbound shipping condition."
+            else:
+                relevance = "CONTEXTUAL"
+                establishes = f"Operational {source} record exists for unit {evidence.unit_id}."
+                does_not_establish = f"Does not directly prove carton packaging or carrier custody condition."
+
         elif "weight" in reason or "tier" in reason or "fulfilment_fee" in reason:
-            relevance = "CONTEXTUAL"
-            establishes = f"Operational unit record found for SKU {charge.sku}."
-            does_not_establish = "Does not contain physical scale weight calibration record."
+            if source == "pack":
+                relevance = "RELEVANT"
+                establishes = f"Pack record {evidence.evidence_id} establishes verified package dimensions and tare weight."
+                does_not_establish = "Does not prove destination scale re-weigh."
+            else:
+                relevance = "CONTEXTUAL"
+                establishes = f"Operational unit record found for SKU {charge.sku}."
+                does_not_establish = "Does not contain physical scale weight calibration record."
 
         else:
             relevance = "CONTEXTUAL"

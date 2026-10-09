@@ -31,6 +31,8 @@ export default function DataSourcesPage() {
   const [uploading, setUploading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [importSuccess, setImportSuccess] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [uiFeedback, setUiFeedback] = useState(null);
 
   // Manual Charge form state
   const [chargeForm, setChargeForm] = useState({
@@ -75,12 +77,12 @@ export default function DataSourcesPage() {
   }, [currentCompany]);
 
   // File select & preview
-  const handleFileChange = async (e) => {
-    const file = e.target.files[0];
+  const handleProcessFile = async (file) => {
     if (!file) return;
     setSelectedFile(file);
     setImportSuccess(null);
     setPreviewData(null);
+    setUiFeedback(null);
 
     const formData = new FormData();
     formData.append("file", file);
@@ -91,10 +93,18 @@ export default function DataSourcesPage() {
       const preview = await api.previewUpload(formData);
       setPreviewData(preview);
     } catch (err) {
-      alert(`Preview failed: ${err.message}`);
+      setUiFeedback({ type: "error", message: `Preview failed: ${err.message}` });
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files && e.target.files[0];
+    if (file) {
+      handleProcessFile(file);
+    }
+    e.target.value = "";
   };
 
   // Confirm Import
@@ -110,9 +120,11 @@ export default function DataSourcesPage() {
       setImportSuccess(res);
       setSelectedFile(null);
       setPreviewData(null);
+      setUiFeedback({ type: "success", message: `Ledger document imported successfully: ${res.imported_rows || 0} rows synced.` });
+      setTimeout(() => setUiFeedback(null), 6000);
       loadFiles();
     } catch (err) {
-      alert(`Import failed: ${err.message}`);
+      setUiFeedback({ type: "error", message: `Import failed: ${err.message}` });
     } finally {
       setImporting(false);
     }
@@ -121,13 +133,15 @@ export default function DataSourcesPage() {
   // Submit Manual Charge
   const handleSubmitCharge = async (e) => {
     e.preventDefault();
+    setUiFeedback(null);
     try {
       await api.createManualCharge({
         ...chargeForm,
         amount: parseFloat(chargeForm.amount) || 0,
         company_id: currentCompany,
       });
-      alert(`Charge ${chargeForm.charge_id} created successfully!`);
+      setUiFeedback({ type: "success", message: `Charge ${chargeForm.charge_id} created successfully!` });
+      setTimeout(() => setUiFeedback(null), 6000);
       setChargeForm({
         charge_id: "",
         unit_id: "",
@@ -139,19 +153,21 @@ export default function DataSourcesPage() {
         charge_date: new Date().toISOString().split("T")[0],
       });
     } catch (err) {
-      alert(`Failed to create charge: ${err.message}`);
+      setUiFeedback({ type: "error", message: `Failed to create charge: ${err.message}` });
     }
   };
 
   // Submit Manual Evidence
   const handleSubmitEvidence = async (e) => {
     e.preventDefault();
+    setUiFeedback(null);
     try {
       await api.createManualEvidence({
         ...evidenceForm,
         company_id: currentCompany,
       });
-      alert(`Evidence ${evidenceForm.evidence_id} created successfully!`);
+      setUiFeedback({ type: "success", message: `Evidence ${evidenceForm.evidence_id} created successfully!` });
+      setTimeout(() => setUiFeedback(null), 6000);
       setEvidenceForm({
         evidence_id: "",
         source_type: "prep",
@@ -165,7 +181,7 @@ export default function DataSourcesPage() {
         timestamp: new Date().toISOString(),
       });
     } catch (err) {
-      alert(`Failed to create evidence: ${err.message}`);
+      setUiFeedback({ type: "error", message: `Failed to create evidence: ${err.message}` });
     }
   };
 
@@ -195,6 +211,32 @@ export default function DataSourcesPage() {
             <span>Tenant: {currentCompany}</span>
           </div>
         </div>
+
+        {uiFeedback && (
+          <div
+            className={`p-3.5 rounded-xl text-xs flex items-center justify-between gap-3 animate-fade-in ${
+              uiFeedback.type === "error"
+                ? "bg-rose-50 border border-rose-200 text-rose-800"
+                : "bg-emerald-50 border border-emerald-200 text-emerald-800"
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {uiFeedback.type === "error" ? (
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              )}
+              <span className="font-semibold">{uiFeedback.message}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setUiFeedback(null)}
+              className="text-slate-400 hover:text-slate-700 font-bold text-xs p-1"
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
         {/* Tab Selection */}
         <div className="flex items-center p-1 bg-white border border-[#E2E8F0] rounded-xl max-w-fit space-x-1 shadow-xs">
@@ -237,7 +279,20 @@ export default function DataSourcesPage() {
         {activeTab === "upload" && (
           <div className="space-y-6">
             {/* Drag & Drop Upload Zone */}
-            <div className="border-2 border-dashed border-[#CBD5E1] hover:border-[#0F766E] rounded-2xl p-10 text-center bg-white transition group shadow-xs">
+            <div
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                const file = e.dataTransfer.files && e.dataTransfer.files[0];
+                if (file) handleProcessFile(file);
+              }}
+              className={`border-2 border-dashed ${isDragging ? "border-[#0F766E] bg-teal-50/50" : "border-[#CBD5E1] bg-white"} hover:border-[#0F766E] rounded-2xl p-10 text-center transition group shadow-xs`}
+            >
               <div className="w-14 h-14 rounded-2xl bg-teal-50 border border-teal-200 text-[#0F766E] flex items-center justify-center mx-auto mb-4 group-hover:scale-105 transition-transform duration-200">
                 <UploadCloud className="w-7 h-7" />
               </div>
@@ -266,6 +321,153 @@ export default function DataSourcesPage() {
                 </label>
               </div>
             </div>
+
+            {/* Uploading Status Indicator */}
+            {uploading && (
+              <div className="rounded-2xl bg-white border border-teal-200 p-6 flex items-center justify-center space-x-3 shadow-xs">
+                <div className="w-5 h-5 border-2 border-[#0F766E] border-t-transparent rounded-full animate-spin" />
+                <span className="text-xs font-semibold text-[#0F766E]">
+                  Analyzing document structure & previewing schema...
+                </span>
+              </div>
+            )}
+
+            {/* Ingestion Success Banner */}
+            {importSuccess && (
+              <div className="rounded-2xl bg-emerald-50 border border-emerald-200 p-5 shadow-xs flex items-start justify-between">
+                <div className="flex items-start space-x-3">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 shrink-0" />
+                  <div>
+                    <h4 className="text-xs font-bold text-emerald-900">
+                      File Ingested Successfully
+                    </h4>
+                    <p className="text-xs text-emerald-700 mt-0.5">
+                      {importSuccess.message}
+                    </p>
+                    <div className="flex flex-wrap gap-2 mt-2 font-mono text-[11px]">
+                      <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
+                        {importSuccess.total_rows} Total Rows
+                      </span>
+                      {importSuccess.charges_imported !== undefined && (
+                        <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
+                          +{importSuccess.charges_imported} New Charges Ingested
+                        </span>
+                      )}
+                      {importSuccess.duplicate_charges_skipped > 0 && (
+                        <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
+                          {importSuccess.duplicate_charges_skipped} Duplicates Safely Skipped
+                        </span>
+                      )}
+                      {importSuccess.evidence_records_imported > 0 && (
+                        <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
+                          +{importSuccess.evidence_records_imported} Evidence Records
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setImportSuccess(null)}
+                  className="text-emerald-700 hover:text-emerald-900 text-sm font-bold px-2 py-1"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
+            {/* Preview & Confirmation Card */}
+            {previewData && selectedFile && (
+              <div className="rounded-2xl bg-white border border-[#0F766E]/40 overflow-hidden shadow-sm">
+                <div className="p-5 border-b border-[#E2E8F0] bg-teal-50/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-xl bg-teal-100 text-[#0F766E] flex items-center justify-center font-bold">
+                      <FileSpreadsheet className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center space-x-2">
+                        <h4 className="text-sm font-bold text-[#0F172A] font-mono">
+                          {selectedFile.name}
+                        </h4>
+                        <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-teal-100 text-[#0F766E]">
+                          {previewData.file_type || "Auto-Detected"}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-[#64748B] mt-0.5">
+                        {(selectedFile.size / 1024).toFixed(1)} KB • {previewData.total_rows || 0} rows found • {previewData.valid_rows || 0} valid records
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setPreviewData(null);
+                      }}
+                      disabled={importing}
+                      className="px-3.5 py-2 text-xs font-semibold text-[#64748B] hover:text-[#0F172A] hover:bg-slate-100 rounded-xl transition"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleConfirmImport}
+                      disabled={importing}
+                      className="inline-flex items-center space-x-2 px-5 py-2 text-xs font-semibold text-white bg-[#0F766E] hover:bg-[#115E59] rounded-xl transition shadow-xs disabled:opacity-50"
+                    >
+                      {importing ? (
+                        <>
+                          <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          <span>Ingesting Ledger Records...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-4 h-4" />
+                          <span>Confirm & Ingest File</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Detected Columns */}
+                {previewData.columns_detected && previewData.columns_detected.length > 0 && (
+                  <div className="px-5 py-3 border-b border-[#E2E8F0] bg-[#F8F9F6] flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] font-bold uppercase text-[#64748B] mr-1">Columns:</span>
+                    {previewData.columns_detected.map((col, idx) => (
+                      <span key={idx} className="text-[10px] font-mono px-2 py-0.5 rounded bg-white border border-[#CBD5E1] text-[#334155]">
+                        {col}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Sample Data Table Preview */}
+                {previewData.sample_preview && previewData.sample_preview.length > 0 && (
+                  <div className="overflow-x-auto max-h-60">
+                    <table className="w-full text-left text-[11px] font-mono">
+                      <thead className="bg-[#F8F9F6] text-[#64748B] border-b border-[#E2E8F0]">
+                        <tr>
+                          {Object.keys(previewData.sample_preview[0]).map((k, i) => (
+                            <th key={i} className="py-2.5 px-3 font-semibold whitespace-nowrap">{k}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[#E2E8F0] text-[#334155]">
+                        {previewData.sample_preview.slice(0, 5).map((row, rIdx) => (
+                          <tr key={rIdx} className="hover:bg-slate-50">
+                            {Object.values(row).map((val, cIdx) => (
+                              <td key={cIdx} className="py-2 px-3 whitespace-nowrap truncate max-w-[200px]">
+                                {val === null || val === undefined ? "—" : String(val)}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Ingestion History Table */}
             <div className="rounded-xl bg-white border border-[#E2E8F0] overflow-hidden shadow-xs">

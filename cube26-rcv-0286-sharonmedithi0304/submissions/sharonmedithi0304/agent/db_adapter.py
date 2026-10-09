@@ -10,10 +10,7 @@ from psycopg2.extras import RealDictCursor
 from pathlib import Path
 import pandas as pd
 
-DATABASE_URL = os.environ.get(
-    "DATABASE_URL",
-    "postgresql://neondb_owner:npg_RQy5Uu0hlMmL@ep-fancy-union-b5a91lxa-pooler.c-7.us-east-2.aws.neon.tech/neondb?sslmode=require"
-)
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
 def get_connection():
     return psycopg2.connect(DATABASE_URL)
@@ -145,6 +142,7 @@ def save_rcv_inspection(unit_record: dict, inspection_res: dict, tenant_id: str 
     return inspection_id
 
 if __name__ == "__main__":
-    csv_file = r"c:\cube\cube26-rcv-0286-sharonmedithi0304\data\receiving_sample.csv"
+    base_dir = Path(__file__).resolve().parents[2]
+    csv_file = str(base_dir / "data" / "receiving_sample.csv")
     if os.path.exists(csv_file):
         seed_rcv_units_from_csv(csv_file)

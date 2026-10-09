@@ -131,8 +131,10 @@ export const api = {
   // Cross-Agent Orchestration & Lifecycle
   syncOperationalEvidence: (companyId = "org_demo_alpha") =>
     fetchApi(`/sync-operational-evidence?company_id=${companyId}`, { method: "POST" }),
-  getUnitLifecycle: (unitId) =>
-    fetchApi(`/unit-lifecycle/${unitId}`),
+  getUnitLifecycle: (unitId, tenantId) => {
+    const q = tenantId ? `?tenant_id=${encodeURIComponent(tenantId)}` : "";
+    return fetchApi(`/unit-lifecycle/${unitId}${q}`);
+  },
 
   // Dedicated Agent Data Feeds
   getReceivingRecords: (params = {}) => {
